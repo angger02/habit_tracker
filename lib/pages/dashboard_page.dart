@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:biodata_app/controllers/name_controller.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -9,6 +11,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, String>> activities = [];
+  final NameController nameController = Get.put(NameController()); // <== Tambahan GetX controller
 
   // Function untuk tambah aktivitas
   void addActivity() async {
@@ -77,7 +80,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final userName = args?['name'] ?? 'User';
 
     return Scaffold(
@@ -147,12 +151,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       topRight: Radius.circular(30),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Row(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // === Bagian aktivitas lama ===
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Column(
@@ -178,24 +183,27 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: activities.isEmpty
+                        const SizedBox(height: 20),
+
+                        activities.isEmpty
                             ? const Center(
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.mood_outlined, size: 64, color: Colors.grey),
+                                    Icon(Icons.mood_outlined,
+                                        size: 64, color: Colors.grey),
                                     SizedBox(height: 16),
                                     Text('Belum ada aktivitas',
-                                        style: TextStyle(fontSize: 16, color: Colors.grey)),
+                                        style: TextStyle(
+                                            fontSize: 16, color: Colors.grey)),
                                     Text('Tap tombol + untuk menambah',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                        style: TextStyle(
+                                            fontSize: 12, color: Colors.grey)),
                                   ],
                                 ),
                               )
                             : ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
                                 itemCount: activities.length,
                                 itemBuilder: (context, index) {
                                   final item = activities[index];
@@ -204,21 +212,76 @@ class _DashboardPageState extends State<DashboardPage> {
                                     child: ListTile(
                                       leading: Text(
                                         item['mood'] ?? '😊',
-                                        style: const TextStyle(fontSize: 32),
+                                        style:
+                                            const TextStyle(fontSize: 32),
                                       ),
                                       title: Text(item['activity'] ?? ''),
                                       subtitle: const Text('Tap untuk edit'),
                                       trailing: IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () => deleteActivity(index),
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () =>
+                                            deleteActivity(index),
                                       ),
                                       onTap: () => editActivity(index),
                                     ),
                                   );
                                 },
                               ),
-                      ),
-                    ],
+
+                        // === FITUR INPUT NAMA (TUGAS MINGGU 07) ===
+                        const SizedBox(height: 30),
+                        const Divider(),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Tambah Daftar Nama",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                onChanged: (value) =>
+                                    nameController.inputText.value = value,
+                                decoration: const InputDecoration(
+                                  labelText: "Masukkan nama",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () => nameController.addName(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                              ),
+                              child: const Text("Tambah"),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Obx(() => ListView.builder(
+                              shrinkWrap: true,
+                              physics:
+                                  const NeverScrollableScrollPhysics(),
+                              itemCount: nameController.names.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  leading: const Icon(Icons.person,
+                                      color: Colors.deepPurple),
+                                  title: Text(
+                                    nameController.names[index],
+                                  ),
+                                );
+                              },
+                            )),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -280,7 +343,9 @@ class _ActivityDialogState extends State<ActivityDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(widget.initialActivity == null ? 'Tambah Aktivitas' : 'Edit Aktivitas'),
+      title: Text(widget.initialActivity == null
+          ? 'Tambah Aktivitas'
+          : 'Edit Aktivitas'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -292,7 +357,8 @@ class _ActivityDialogState extends State<ActivityDialog> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Pilih Mood:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text('Pilih Mood:',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -301,8 +367,10 @@ class _ActivityDialogState extends State<ActivityDialog> {
               return ChoiceChip(
                 label: Column(
                   children: [
-                    Text(mood['emoji']!, style: const TextStyle(fontSize: 24)),
-                    Text(mood['label']!, style: const TextStyle(fontSize: 10)),
+                    Text(mood['emoji']!,
+                        style: const TextStyle(fontSize: 24)),
+                    Text(mood['label']!,
+                        style: const TextStyle(fontSize: 10)),
                   ],
                 ),
                 selected: isSelected,
